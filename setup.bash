@@ -1,6 +1,6 @@
 # install wget
 sudo apt-get update
-sudo apt-get install wget nano tmux net-tools iputils-ping
+sudo apt-get install wget nano tmux net-tools iputils-ping git
 
 # setup library path for cuda
 export PATH=/usr/local/cuda-12.1/bin${PATH:+:${PATH}}
