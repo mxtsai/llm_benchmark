@@ -1,4 +1,5 @@
 import time
+import json
 import argparse
 
 from llm import Local_LLM
@@ -89,3 +90,7 @@ if __name__ == "__main__":
 
     print(f"Batch Size {args.batch_size} Tok/Sec for {len(questions)} inputs: {tokens_per_second['batch']:.4f} tok/sec")
     print(f"Per Request Token/Sec: {tokens_per_second['per_request']:.4f} tok/sec")
+
+    # save response 
+    with open("responses.json", "w") as f:
+        json.dump(responses, f, ensure_ascii=False, indent=4)
