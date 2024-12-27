@@ -6,9 +6,7 @@ import aiohttp
 import time
 
 class Local_LLM():
-
     def __init__(self, ip_address, port, timeout_seconds=120, timeout_retry_increment=10):
-
         self.ip_address = ip_address
         self.port = port
         self.timeout_seconds = timeout_seconds
@@ -28,7 +26,6 @@ class Local_LLM():
                 return response_data['data'][0]
 
     async def generate(self, message, temperature=0.0, break_pattern=None, **kwargs):
-        
         if isinstance(message, str):
             message = [{'role': 'user', 'content': message}]
         
@@ -58,12 +55,24 @@ class Local_LLM():
             'Content-Type': 'application/json'
         }
 
+        prompt_tokens = 0
+        completion_tokens = 0
+        response_text = None
+        latency = None
+
         async with aiohttp.ClientSession() as session:
-            response_text = None
             try:
-                async with session.post(url, data=json.dumps(data), headers=headers, timeout=aiohttp.ClientTimeout(total=self.timeout_seconds)) as response:
+                create_time = time.time()
+
+                async with session.post(
+                    url, 
+                    data=json.dumps(data), 
+                    headers=headers, 
+                    timeout=aiohttp.ClientTimeout(total=self.timeout_seconds)
+                ) as response:
                     if response.status == 200:
                         response_json = await response.json()
+
                         response_text = response_json["choices"][0]['message']['content']
                         response_text = response_text.replace(message[0]['content'], "").strip()
 
@@ -73,17 +82,24 @@ class Local_LLM():
                         self.prompt_tokens += prompt_tokens
                         self.completion_tokens += completion_tokens
 
-                        # count latency
-                        latency = int(time.time()) - response_json["created"]
+                        latency = time.time() - create_time
 
                     else:
                         raise Exception(f"Failed to generate response: {response.text}")
             except asyncio.exceptions.TimeoutError:
-                print(f"Request timed out after {self.timeout_seconds} seconds, retrying (+{self.timeout_retry_increment})...")
+                print(
+                    f"Request timed out after {self.timeout_seconds} seconds, "
+                    f"retrying (+{self.timeout_retry_increment})..."
+                )
                 self.timeout_seconds += self.timeout_retry_increment
 
-        return {"response": response_text, "prompt_tokens": prompt_tokens, "completion_tokens": completion_tokens, "latency": latency}
-    
+        return {
+            "response": response_text, 
+            "prompt_tokens": prompt_tokens, 
+            "completion_tokens": completion_tokens, 
+            "latency": latency
+        }
+
     def __call__(self, message, **kwds):
         return asyncio.run(self.generate(message, **kwds))
     
